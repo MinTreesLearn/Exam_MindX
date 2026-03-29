@@ -44,6 +44,8 @@
     color: var(--gray-800);
     min-height: 100vh;
     line-height: 1.6;
+    user-select: none;
+    -webkit-user-select: none;
   }
 
   /* ===== LOGIN SCREEN ===== */
@@ -919,7 +921,9 @@ const LS_START     = 'cp1_start_ts';
 const LS_SUBMITTED_PREFIX = 'cp1_submitted_snapshot_';
 const EXAM_DURATION = 120 * 60; // 7200 seconds
 const LAST_MINUTES_REMINDER_WINDOW = 10 * 60; // 10 minutes
+const SCREENSHOT_PENALTY_SECONDS = 15 * 60; // 15 minutes
 const APPS_SCRIPT_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwysfGp1PRHPqsmy0piSGTuR3bPHWtzyGVYfqV5xtbqmVOeb2arc97RLJD3OMaxubCr/exec';
+const LS_SECURITY_PREFIX = 'cp1_security_';
 
 // ─── Timer state ─────────────────────────────────────────────────────────────
 let timerInterval = null;
@@ -927,6 +931,12 @@ let lastReminderMinute = null;
 let submissionLockedByTime = false;
 let devToolsMonitor = null;
 let devToolsLikelyOpen = false;
+let lastContextMenuWarnAt = 0;
+let lastCopyWarnAt = 0;
+let lastSelectionWarnAt = 0;
+let lastScreenshotPenaltyAt = 0;
+let currentStudentDisplayName = '';
+let securityState = null;
 
 // ─── Enter key support ───────────────────────────────────────────────────────
 document.getElementById('name-input').addEventListener('keydown', e => {
@@ -964,6 +974,8 @@ function showExam(student) {
   const examEl = document.getElementById('exam-screen');
   examEl.style.display = 'block';
   examEl.classList.add('visible');
+  currentStudentDisplayName = student.display;
+  securityState = loadSecurityState(currentStudentDisplayName);
   submissionLockedByTime = false;
   lastReminderMinute = null;
 
@@ -979,6 +991,49 @@ function showExam(student) {
 
   // Start timer (persistent across F5)
   startTimer();
+}
+
+function createEmptySecurityState() {
+  return {
+    screenshotShortcutAttempts: 0,
+    devtoolsShortcutAttempts: 0,
+    devtoolsDetectedCount: 0,
+    hiddenTransitions: 0,
+    contextMenuAttempts: 0,
+    copyAttempts: 0,
+    selectionAttempts: 0,
+    updatedAt: Date.now()
+  };
+}
+
+function getSecurityStorageKey(displayName) {
+  return LS_SECURITY_PREFIX + normalizeName(displayName).replace(/\s+/g, '_');
+}
+
+function loadSecurityState(displayName) {
+  const raw = localStorage.getItem(getSecurityStorageKey(displayName));
+  if (!raw) return createEmptySecurityState();
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return createEmptySecurityState();
+    return { ...createEmptySecurityState(), ...parsed };
+  } catch (e) {
+    return createEmptySecurityState();
+  }
+}
+
+function saveSecurityState() {
+  if (!currentStudentDisplayName || !securityState) return;
+  securityState.updatedAt = Date.now();
+  localStorage.setItem(getSecurityStorageKey(currentStudentDisplayName), JSON.stringify(securityState));
+}
+
+function recordSecurityEvent(eventKey) {
+  if (!securityState) return;
+  if (Object.prototype.hasOwnProperty.call(securityState, eventKey)) {
+    securityState[eventKey] += 1;
+    saveSecurityState();
+  }
 }
 
 function getSubmittedStorageKey(displayName) {
@@ -1066,13 +1121,30 @@ function lockSubmissionByTime() {
   setSubmittedStatus('Đã hết thời gian. Hệ thống đã khóa nộp bài.', true);
 }
 
-function applyDevToolsPenalty() {
+function applyScreenshotPenalty() {
+  const now = Date.now();
+  if (now - lastScreenshotPenaltyAt < 2500) return;
+  lastScreenshotPenaltyAt = now;
+
   const currentStart = parseInt(localStorage.getItem(LS_START) || Date.now(), 10);
-  const penalizedStart = currentStart - 60 * 1000;
+  const penalizedStart = currentStart - SCREENSHOT_PENALTY_SECONDS * 1000;
   localStorage.setItem(LS_START, String(penalizedStart));
-  setSubmittedStatus('Phát hiện F12/Developer Tools: đã trừ 1 phút thời gian làm bài.', true);
-  alert('Không được mở Developer Tools. Hệ thống đã trừ 1 phút thời gian.');
+  setSubmittedStatus('Phát hiện thao tác chụp màn hình: đã trừ 15 phút thời gian làm bài.', true);
   tickTimer();
+}
+
+function notifyCopyBlocked() {
+  const now = Date.now();
+  if (now - lastCopyWarnAt < 2000) return;
+  lastCopyWarnAt = now;
+  recordSecurityEvent('copyAttempts');
+  setSubmittedStatus('Không được sao chép nội dung trong lúc thi.', true);
+}
+
+function handleClipboardAction(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  notifyCopyBlocked();
 }
 
 function handleForbiddenShortcut(e) {
@@ -1080,11 +1152,83 @@ function handleForbiddenShortcut(e) {
   const isF12 = e.key === 'F12';
   const isCtrlShiftOpen = (e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'i' || key === 'j' || key === 'c');
   const isViewSource = (e.ctrlKey || e.metaKey) && key === 'u';
+  const isCopyShortcut = (e.ctrlKey || e.metaKey) && key === 'c';
+  const isCutShortcut = (e.ctrlKey || e.metaKey) && key === 'x';
+  const isPrintScreen = e.key === 'PrintScreen';
+  const isSnippingShortcut = e.shiftKey && (e.metaKey || e.ctrlKey) && key === 's';
+
+  if (isCopyShortcut || isCutShortcut) {
+    e.preventDefault();
+    e.stopPropagation();
+    notifyCopyBlocked();
+    return;
+  }
+
+  if (isPrintScreen || isSnippingShortcut) {
+    e.preventDefault();
+    e.stopPropagation();
+    recordSecurityEvent('screenshotShortcutAttempts');
+    applyScreenshotPenalty();
+    return;
+  }
 
   if (isF12 || isCtrlShiftOpen || isViewSource) {
     e.preventDefault();
     e.stopPropagation();
-    applyDevToolsPenalty();
+    recordSecurityEvent('devtoolsShortcutAttempts');
+  }
+}
+
+function handleScreenshotKeyup(e) {
+  const isPrintScreen = e.key === 'PrintScreen' || e.keyCode === 44;
+  if (!isPrintScreen) return;
+
+  recordSecurityEvent('screenshotShortcutAttempts');
+  applyScreenshotPenalty();
+}
+
+function handleVisibilitySecurity() {
+  if (document.hidden) {
+    recordSecurityEvent('hiddenTransitions');
+    applyScreenshotPenalty();
+  }
+}
+
+function handleWindowBlur() {
+  applyScreenshotPenalty();
+}
+
+function handleContextMenu(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  recordSecurityEvent('contextMenuAttempts');
+
+  const now = Date.now();
+  if (now - lastContextMenuWarnAt >= 3000) {
+    setSubmittedStatus('Chuột phải đã bị vô hiệu trong lúc thi.', true);
+    lastContextMenuWarnAt = now;
+  }
+}
+
+function notifySelectionBlocked() {
+  const now = Date.now();
+  if (now - lastSelectionWarnAt < 2000) return;
+  lastSelectionWarnAt = now;
+  recordSecurityEvent('selectionAttempts');
+  setSubmittedStatus('Không được bôi đen/chọn nội dung trong lúc thi.', true);
+}
+
+function handleSelectionStart(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  notifySelectionBlocked();
+}
+
+function handleSelectionChange() {
+  const selection = window.getSelection();
+  if (selection && !selection.isCollapsed) {
+    selection.removeAllRanges();
+    notifySelectionBlocked();
   }
 }
 
@@ -1095,7 +1239,7 @@ function monitorDevToolsState() {
 
   if (opened && !devToolsLikelyOpen) {
     devToolsLikelyOpen = true;
-    applyDevToolsPenalty();
+    recordSecurityEvent('devtoolsDetectedCount');
   } else if (!opened && devToolsLikelyOpen) {
     devToolsLikelyOpen = false;
   }
@@ -1103,6 +1247,14 @@ function monitorDevToolsState() {
 
 function initExamSecurity() {
   document.addEventListener('keydown', handleForbiddenShortcut, true);
+  document.addEventListener('keyup', handleScreenshotKeyup, true);
+  document.addEventListener('contextmenu', handleContextMenu, true);
+  document.addEventListener('copy', handleClipboardAction, true);
+  document.addEventListener('cut', handleClipboardAction, true);
+  document.addEventListener('selectstart', handleSelectionStart, true);
+  document.addEventListener('selectionchange', handleSelectionChange, true);
+  document.addEventListener('visibilitychange', handleVisibilitySecurity, true);
+  window.addEventListener('blur', handleWindowBlur, true);
   if (devToolsMonitor) clearInterval(devToolsMonitor);
   devToolsMonitor = setInterval(monitorDevToolsState, 1000);
 }
@@ -1248,6 +1400,7 @@ function initSubmittedReview(student) {
       fileType: snapshot.fileType || 'text/plain',
       fileSize: snapshot.fileSize || 0,
       fileContentBase64: utf8ToBase64(snapshot.content || ''),
+      securityMeta: securityState || createEmptySecurityState(),
       source: 'cp1_html',
       submittedAtClient: new Date().toISOString()
     };
@@ -1439,6 +1592,7 @@ function tickTimer() {
 // ─── Auto-restore session on page load ───────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   initExamSecurity();
+
   const savedKey = localStorage.getItem(LS_STUDENT);
   if (savedKey && STUDENTS[savedKey]) {
     document.getElementById('name-input').value = STUDENTS[savedKey].display;
