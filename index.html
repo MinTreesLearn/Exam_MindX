@@ -913,12 +913,16 @@ const STUDENTS = {
   'nguyen le huu tri':    { de: 1, display: 'Nguyễn Lê Hữu Trí' },
   'do dinh dai phong':    { de: 2, display: 'Đỗ Đình Đại Phong' },
   'pham duc phat':        { de: 2, display: 'Phạm Đức Phát' },
+  'hoc vien test':        { de: 1, display: 'Học Viên Test' },
 };
 
 // ─── localStorage keys ───────────────────────────────────────────────────────
 const LS_STUDENT   = 'cp1_student';
 const LS_START     = 'cp1_start_ts';
+const LS_START_PREFIX = 'cp1_start_ts_';
 const LS_SUBMITTED_PREFIX = 'cp1_submitted_snapshot_';
+const LS_TIMER_RESET_VERSION_KEY = 'cp1_timer_reset_version';
+const TIMER_RESET_VERSION = '2026_03_29_reset_2';
 const EXAM_DURATION = 120 * 60; // 7200 seconds
 const LAST_MINUTES_REMINDER_WINDOW = 10 * 60; // 10 minutes
 const SCREENSHOT_PENALTY_SECONDS = 15 * 60; // 15 minutes
@@ -936,6 +940,7 @@ let lastCopyWarnAt = 0;
 let lastSelectionWarnAt = 0;
 let lastScreenshotPenaltyAt = 0;
 let currentStudentDisplayName = '';
+let currentStartStorageKey = LS_START;
 let securityState = null;
 
 // ─── Enter key support ───────────────────────────────────────────────────────
@@ -960,10 +965,6 @@ function handleLogin() {
 
   // Save to localStorage so F5 restores session
   localStorage.setItem(LS_STUDENT, key);
-  // Only set start time if not already set (first login)
-  if (!localStorage.getItem(LS_START)) {
-    localStorage.setItem(LS_START, Date.now().toString());
-  }
 
   showExam(student);
 }
@@ -975,7 +976,13 @@ function showExam(student) {
   examEl.style.display = 'block';
   examEl.classList.add('visible');
   currentStudentDisplayName = student.display;
+  currentStartStorageKey = getStartStorageKey(student.display);
   securityState = loadSecurityState(currentStudentDisplayName);
+
+  if (!localStorage.getItem(currentStartStorageKey)) {
+    localStorage.setItem(currentStartStorageKey, Date.now().toString());
+  }
+
   submissionLockedByTime = false;
   lastReminderMinute = null;
 
@@ -1008,6 +1015,22 @@ function createEmptySecurityState() {
 
 function getSecurityStorageKey(displayName) {
   return LS_SECURITY_PREFIX + normalizeName(displayName).replace(/\s+/g, '_');
+}
+
+function getStartStorageKey(displayName) {
+  return LS_START_PREFIX + normalizeName(displayName).replace(/\s+/g, '_');
+}
+
+function resetAllStudentTimersIfNeeded() {
+  const appliedVersion = localStorage.getItem(LS_TIMER_RESET_VERSION_KEY);
+  if (appliedVersion === TIMER_RESET_VERSION) return;
+
+  localStorage.removeItem(LS_START); // Legacy shared timer key
+  Object.values(STUDENTS).forEach(student => {
+    localStorage.removeItem(getStartStorageKey(student.display));
+  });
+
+  localStorage.setItem(LS_TIMER_RESET_VERSION_KEY, TIMER_RESET_VERSION);
 }
 
 function loadSecurityState(displayName) {
@@ -1106,7 +1129,10 @@ function setSubmittedStatus(message, isError = false) {
 }
 
 function getRemainingSeconds() {
-  const start = parseInt(localStorage.getItem(LS_START) || Date.now(), 10);
+  const start = parseInt(
+    localStorage.getItem(currentStartStorageKey) || localStorage.getItem(LS_START) || Date.now(),
+    10
+  );
   const elapsed = Math.floor((Date.now() - start) / 1000);
   return EXAM_DURATION - elapsed;
 }
@@ -1126,9 +1152,12 @@ function applyScreenshotPenalty() {
   if (now - lastScreenshotPenaltyAt < 2500) return;
   lastScreenshotPenaltyAt = now;
 
-  const currentStart = parseInt(localStorage.getItem(LS_START) || Date.now(), 10);
+  const currentStart = parseInt(
+    localStorage.getItem(currentStartStorageKey) || localStorage.getItem(LS_START) || Date.now(),
+    10
+  );
   const penalizedStart = currentStart - SCREENSHOT_PENALTY_SECONDS * 1000;
-  localStorage.setItem(LS_START, String(penalizedStart));
+  localStorage.setItem(currentStartStorageKey, String(penalizedStart));
   setSubmittedStatus('Phát hiện thao tác chụp màn hình: đã trừ 15 phút thời gian làm bài.', true);
   tickTimer();
 }
@@ -1190,12 +1219,11 @@ function handleScreenshotKeyup(e) {
 function handleVisibilitySecurity() {
   if (document.hidden) {
     recordSecurityEvent('hiddenTransitions');
-    applyScreenshotPenalty();
   }
 }
 
 function handleWindowBlur() {
-  applyScreenshotPenalty();
+  // Do not deduct time on blur to avoid false penalties during reload or file dialogs.
 }
 
 function handleContextMenu(e) {
@@ -1591,6 +1619,7 @@ function tickTimer() {
 
 // ─── Auto-restore session on page load ───────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+  resetAllStudentTimersIfNeeded();
   initExamSecurity();
 
   const savedKey = localStorage.getItem(LS_STUDENT);
