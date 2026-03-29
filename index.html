@@ -1,0 +1,1740 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bài Thi Lập Trình — CP1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* ===== CSS VARIABLES ===== */
+  :root {
+    --peach: #ffb089;
+    --peach-dark: #d56a36;
+    --peach-light: #fff3ea;
+    --sky: #78c8d8;
+    --sky-dark: #0e6378;
+    --sky-light: #e8f8fc;
+    --green: #129b72;
+    --green-dark: #0f7f5d;
+    --white: #FFFFFF;
+    --gray-50: #f4f7fb;
+    --gray-100: #eaf0f7;
+    --gray-200: #d8e1ec;
+    --gray-400: #5f6f84;
+    --gray-600: #2f425c;
+    --gray-700: #1f3148;
+    --gray-800: #0f2036;
+    --red: #dc2626;
+    --font-body: 'Nunito', sans-serif;
+    --font-display: 'Playfair Display', serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius: 16px;
+    --radius-sm: 8px;
+    --shadow: 0 10px 30px rgba(14,99,120,0.12), 0 1px 4px rgba(0,0,0,0.05);
+    --shadow-card: 0 6px 24px rgba(14,99,120,0.1), 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  /* ===== RESET ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font-body);
+    background: var(--gray-50);
+    color: var(--gray-800);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ===== LOGIN SCREEN ===== */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #fff4ed 0%, #e8f8fc 50%, #ecfff8 100%);
+  }
+
+  /* Animated blobs */
+  .blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+  .blob-1 {
+    width: 420px; height: 420px;
+    background: var(--peach);
+    top: -120px; left: -100px;
+    animation: floatBlob1 8s ease-in-out infinite;
+  }
+  .blob-2 {
+    width: 320px; height: 320px;
+    background: var(--sky);
+    bottom: -80px; right: -80px;
+    animation: floatBlob2 10s ease-in-out infinite;
+  }
+  .blob-3 {
+    width: 200px; height: 200px;
+    background: #b8f5d0;
+    top: 50%; right: 15%;
+    animation: floatBlob3 7s ease-in-out infinite;
+  }
+  .blob-4 {
+    width: 160px; height: 160px;
+    background: var(--peach);
+    bottom: 20%; left: 10%;
+    animation: floatBlob1 9s ease-in-out infinite reverse;
+  }
+
+  @keyframes floatBlob1 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -40px) scale(1.06); }
+    66% { transform: translate(-20px, 20px) scale(0.95); }
+  }
+  @keyframes floatBlob2 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    40% { transform: translate(-35px, -25px) scale(1.08); }
+    70% { transform: translate(15px, 30px) scale(0.93); }
+  }
+  @keyframes floatBlob3 {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    50% { transform: translate(20px, -30px) scale(1.1); }
+  }
+
+  .login-card {
+    position: relative;
+    z-index: 10;
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(20px);
+    border: 1.5px solid rgba(253,188,180,0.35);
+    border-radius: 28px;
+    padding: 52px 48px 44px;
+    width: 100%;
+    max-width: 480px;
+    box-shadow: 0 8px 48px rgba(253,188,180,0.22), 0 2px 8px rgba(0,0,0,0.07);
+    animation: cardAppear 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes cardAppear {
+    from { opacity: 0; transform: translateY(40px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .login-title {
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--gray-800);
+    text-align: center;
+    margin-bottom: 4px;
+    line-height: 1.25;
+  }
+  .login-subtitle {
+    text-align: center;
+    color: var(--gray-700);
+    font-size: 15px;
+    margin-bottom: 36px;
+  }
+
+  .login-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--gray-700);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .login-name-requirement {
+    margin-top: 8px;
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(14, 99, 120, 0.22);
+    background: rgba(120, 200, 216, 0.12);
+    font-size: 12.5px;
+    color: var(--gray-700);
+    line-height: 1.5;
+  }
+  .login-name-requirement strong {
+    color: var(--gray-800);
+  }
+
+  .login-input {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--gray-800);
+    background: var(--white);
+    outline: none;
+    transition: border-color 0.25s, box-shadow 0.25s;
+    margin-bottom: 8px;
+  }
+  .login-input:focus {
+    border-color: var(--sky);
+    box-shadow: 0 0 0 4px rgba(173,216,230,0.25);
+  }
+  .login-input::placeholder { color: var(--gray-400); }
+
+  .login-btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--green);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .login-btn:hover {
+    background: var(--green-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(34,197,94,0.3);
+  }
+  .login-btn:active { transform: translateY(0); }
+
+  .login-error {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    background: #fff1f0;
+    border: 1.5px solid #fca5a5;
+    border-radius: var(--radius-sm);
+    padding: 11px 14px;
+    font-size: 13.5px;
+    color: #dc2626;
+    margin-top: 12px;
+    animation: shake 0.4s ease;
+  }
+  .login-error.show { display: flex; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+
+  .login-hint {
+    text-align: center;
+    font-size: 12px;
+    color: var(--gray-400);
+    margin-top: 20px;
+  }
+  .login-rules {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(120, 200, 216, 0.45);
+    background: rgba(232, 248, 252, 0.85);
+  }
+  .login-rules-title {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--gray-800);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+  .login-rules-list {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 12.5px;
+    color: var(--gray-700);
+    line-height: 1.6;
+  }
+  .login-rules-list li + li {
+    margin-top: 4px;
+  }
+
+  /* ===== EXAM SCREEN ===== */
+  #exam-screen { display: none; }
+  #exam-screen.visible { display: block; }
+
+  /* Timer - sticky top right */
+  .timer-bar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1.5px solid rgba(173,216,230,0.35);
+    padding: 10px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 16px rgba(173,216,230,0.12);
+  }
+  .timer-left {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gray-800);
+  }
+  .timer-left span {
+    color: var(--peach-dark);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-body);
+    margin-left: 6px;
+  }
+  .timer-display {
+    font-family: var(--font-mono);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--sky-dark);
+    background: var(--sky-light);
+    padding: 6px 18px;
+    border-radius: 40px;
+    border: 1.5px solid var(--sky);
+    letter-spacing: 0.05em;
+    transition: color 0.4s, background 0.4s, border-color 0.4s;
+  }
+  .timer-display.warn {
+    color: var(--peach-dark);
+    background: var(--peach-light);
+    border-color: var(--peach);
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .timer-display.danger {
+    color: var(--red);
+    background: #fff1f0;
+    border-color: #fca5a5;
+    animation: pulse-fast 0.8s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+  }
+  @keyframes pulse-fast {
+    0%,100% { transform: scale(1); box-shadow: none; }
+    50% { transform: scale(1.05); box-shadow: 0 0 16px rgba(239,68,68,0.35); }
+  }
+
+  /* Exam Content */
+  .exam-content {
+    max-width: 100%;
+    width: 100%;
+    margin: 0 auto;
+    padding: 90px 24px 60px;
+  }
+
+  /* Exam Header */
+  .exam-header {
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1.5px solid rgba(253,188,180,0.4);
+    padding: 32px 36px;
+    margin-bottom: 32px;
+    box-shadow: var(--shadow);
+    animation: fadeSlideUp 0.5s ease both;
+  }
+  .exam-header-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+    border-bottom: 1.5px dashed var(--gray-200);
+  }
+  .exam-badge-de {
+    background: linear-gradient(135deg, #ef8f80, var(--peach-dark));
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 40px;
+    white-space: nowrap;
+    margin-top: 4px;
+    box-shadow: 0 2px 8px rgba(253,188,180,0.4);
+  }
+  .exam-header-title {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--gray-800);
+    line-height: 1.3;
+  }
+  .exam-header-title small {
+    display: block;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gray-400);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .exam-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .meta-item {
+    display: block;
+    font-size: 13.5px;
+    color: var(--gray-700);
+  }
+  .meta-label { font-weight: 600; color: var(--gray-800); display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .submit-box {
+    background: linear-gradient(135deg, var(--peach-light), #fff);
+    border: 2px solid var(--peach);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 20px;
+    display: block;
+  }
+  .submit-box-text { font-size: 13.5px; color: var(--gray-700); }
+  .submit-box-text strong { color: var(--gray-800); font-weight: 700; }
+  .submit-box-text code {
+    font-family: var(--font-mono);
+    background: rgba(253,188,180,0.35);
+    color: #c0392b;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 12.5px;
+  }
+  .submit-actions {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--gray-600);
+    line-height: 1.6;
+  }
+  .is-hidden { display: none !important; }
+  .submitted-review {
+    margin-top: 14px;
+    padding: 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+  }
+  .submitted-review-title {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--gray-700);
+    margin-bottom: 8px;
+    letter-spacing: 0.02em;
+  }
+  .submitted-review-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .submitted-file-input {
+    flex: 1 1 260px;
+    min-width: 220px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    padding: 8px;
+    background: var(--white);
+    color: var(--gray-700);
+    font-size: 12.5px;
+  }
+  .submitted-save-btn,
+  .submitted-action-btn {
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 9px 12px;
+    font-family: var(--font-body);
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .submitted-save-btn {
+    background: var(--green);
+    color: var(--white);
+  }
+  .submitted-save-btn:hover { background: var(--green-dark); }
+  .submitted-file-card {
+    margin-top: 10px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+    background: #f9fafb;
+  }
+  .submitted-file-meta {
+    font-size: 12.5px;
+    color: var(--gray-700);
+    line-height: 1.6;
+  }
+  .submitted-file-meta strong { color: var(--gray-800); }
+  .submitted-review-actions {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .submitted-action-btn {
+    background: var(--white);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-200);
+  }
+  .submitted-action-btn:hover { background: #f3f4f6; }
+  .submitted-action-btn.primary {
+    background: var(--green);
+    color: var(--white);
+    border-color: var(--green);
+  }
+  .submitted-action-btn.primary:hover { background: var(--green-dark); }
+  .submitted-action-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .submitted-file-preview {
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    background: #111827;
+    color: #e5e7eb;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre;
+    max-height: 260px;
+    overflow: auto;
+  }
+  .submitted-status {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--gray-600);
+  }
+  .submitted-status.error { color: #b91c1c; }
+
+  /* ===== PROBLEM CARDS ===== */
+  .problems-list { display: flex; flex-direction: column; gap: 20px; }
+
+  .question-nav {
+    position: sticky;
+    top: 58px;
+    z-index: 900;
+    margin-bottom: 14px;
+    padding: 10px;
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(8px);
+  }
+  .question-nav-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .question-nav-btn {
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 9px 14px;
+    background: var(--sky-dark);
+    color: var(--white);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .question-nav-btn:hover { background: #0b5264; }
+  .question-nav-btn:disabled {
+    background: var(--gray-400);
+    cursor: not-allowed;
+  }
+  .question-nav-indicator {
+    flex: 1;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--gray-700);
+  }
+  .question-jump-list {
+    margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .question-jump-btn {
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    color: var(--gray-700);
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 7px 10px;
+    cursor: pointer;
+    min-width: 38px;
+  }
+  .question-jump-btn.active {
+    background: var(--sky-dark);
+    border-color: var(--sky-dark);
+    color: var(--white);
+  }
+
+  .problem-card {
+    display: none;
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1.5px solid var(--gray-200);
+    overflow: hidden;
+    box-shadow: var(--shadow-card);
+    min-height: calc(100vh - 260px);
+  }
+  .problem-card.active { display: block; }
+  @keyframes fadeSlideUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .problem-header {
+    padding: 16px 22px;
+    background: linear-gradient(to right, #d8edf6, var(--white));
+    border-bottom: 1.5px solid rgba(91, 167, 193, 0.35);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    user-select: text;
+  }
+  .problem-num {
+    background: var(--sky-dark);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 5px 13px;
+    border-radius: 40px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .problem-title {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--gray-800);
+  }
+
+  .problem-body {
+    max-height: none;
+    opacity: 1;
+    overflow: visible;
+    padding: 22px;
+    transition: none;
+  }
+
+  .section-label {
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gray-600);
+    margin-bottom: 7px;
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .section-label::before {
+    content: '';
+    display: inline-block;
+    width: 3px;
+    height: 12px;
+    background: var(--sky);
+    border-radius: 2px;
+  }
+  .section-label:first-child { margin-top: 0; }
+
+  .desc-text {
+    font-size: 14.5px;
+    color: var(--gray-700);
+    line-height: 1.75;
+  }
+
+  .format-box {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    font-size: 13.5px;
+    color: var(--gray-700);
+    line-height: 1.7;
+  }
+
+  .constraint-box {
+    background: #f0f8fc;
+    border-left: 3px solid #69b4cd;
+    padding: 9px 14px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 13px;
+    color: var(--gray-700);
+    font-family: var(--font-mono);
+    line-height: 1.7;
+  }
+
+  /* Examples */
+  .examples { display: flex; flex-direction: column; gap: 12px; margin-top: 7px; }
+  .example-block {
+    border: 1.5px solid var(--gray-200);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .example-label-bar {
+    background: #eef3f7;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gray-700);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .io-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .io-col {
+    padding: 12px 14px;
+  }
+  .io-col:first-child {
+    border-right: 1px solid var(--gray-200);
+  }
+  .io-col-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gray-600);
+    margin-bottom: 6px;
+  }
+  .io-code {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--gray-800);
+    white-space: pre;
+    line-height: 1.6;
+  }
+  .note-box {
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+    padding: 9px 14px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 13px;
+    color: #92400e;
+    margin-top: 8px;
+    line-height: 1.65;
+  }
+
+  /* ===== TIME EXPIRED OVERLAY ===== */
+  #expired-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+    padding: 24px;
+  }
+  #expired-overlay.show { display: flex; }
+  .expired-card {
+    background: var(--white);
+    border-radius: 24px;
+    padding: 48px 52px;
+    max-width: 440px;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.25);
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes popIn {
+    from { transform: scale(0.7); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+  .expired-title {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--gray-800);
+    margin-bottom: 10px;
+  }
+  .expired-text { font-size: 15px; color: var(--gray-600); line-height: 1.65; }
+  .expired-actions {
+    margin-top: 16px;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* ===== FOOTER ===== */
+  .exam-footer {
+    text-align: center;
+    padding: 16px;
+    font-size: 12px;
+    color: var(--gray-600);
+    margin-top: 24px;
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 540px) {
+    .login-card { padding: 36px 24px 30px; }
+    .exam-content { padding: 80px 14px 40px; }
+    .problem-body { padding: 16px; }
+    .question-nav {
+      top: 54px;
+      padding: 8px;
+    }
+    .question-nav-main {
+      flex-wrap: wrap;
+    }
+    .question-nav-indicator {
+      order: -1;
+      width: 100%;
+      margin-bottom: 6px;
+    }
+    .question-nav-btn {
+      flex: 1;
+    }
+    .exam-header { padding: 22px 18px; }
+    .io-grid { grid-template-columns: 1fr; }
+    .io-col:first-child { border-right: none; border-bottom: 1px solid var(--gray-200); }
+    .timer-left { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================= LOGIN SCREEN ============================= -->
+<div id="login-screen">
+  <div class="blob blob-1"></div>
+  <div class="blob blob-2"></div>
+  <div class="blob blob-3"></div>
+  <div class="blob blob-4"></div>
+
+  <div class="login-card">
+    <h1 class="login-title">Kiểm tra định kì lần 1</h1>
+    <p class="login-subtitle">TDM-C4K-PTB12 — CP1</p>
+
+    <div class="login-name-requirement">
+      <strong>Yêu cầu nhập tên:</strong> Nhập đúng họ và tên để nhận đề.
+    </div>
+
+    <label class="login-label" for="name-input">Họ và tên học viên</label>
+    <input
+      class="login-input"
+      id="name-input"
+      type="text"
+      placeholder="Nhập đầy đủ họ và tên của bạn..."
+      autocomplete="off"
+      spellcheck="false"
+    />
+
+    <button class="login-btn" id="login-btn" onclick="handleLogin()">Vào thi</button>
+
+    <div class="login-error" id="login-error">
+      <span>Tên không có trong danh sách. Vui lòng kiểm tra lại!</span>
+    </div>
+
+    <p class="login-hint">Thời gian làm bài: <strong>120 phút</strong> — Timer bắt đầu ngay khi vào thi</p>
+
+    <div class="login-rules">
+      <div class="login-rules-title">Các lưu ý trình bày</div>
+      <ul class="login-rules-list">
+        <li>Trình bày code rõ ràng, thụt lề chuẩn và đặt tên biến dễ hiểu.</li>
+        <li>Mỗi câu chỉ in đúng kết quả yêu cầu, không in thêm mô tả.</li>
+        <li>Không tải lại trang trong lúc làm bài để tránh mất tiến trình.</li>
+        <li>File nộp phải đúng tên theo mẫu <strong>hovaten_cp1.py</strong>.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= EXAM SCREEN ============================= -->
+<div id="exam-screen">
+
+  <!-- Sticky Timer Bar -->
+  <div class="timer-bar">
+    <div class="timer-left">
+      Bài Thi CP1 <span id="timer-name-display"></span>
+    </div>
+    <div class="timer-display" id="timer-display">02:00:00</div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="exam-content" id="exam-content">
+    <!-- Injected dynamically -->
+  </div>
+
+  <div class="exam-footer">
+    Hệ thống thi lập trình — Mọi thay đổi sau khi nộp bài không được tính.
+  </div>
+</div>
+
+<!-- ============================= EXPIRED OVERLAY ============================= -->
+<div id="expired-overlay">
+  <div class="expired-card">
+    <div class="expired-title">Hết giờ rồi!</div>
+    <p class="expired-text">
+      Thời gian làm bài đã kết thúc.<br>
+      Hãy nộp ngay file <strong id="expired-filename">hovaten_cp1.py</strong> cho giảng viên.
+    </p>
+  </div>
+</div>
+
+<!-- ============================= JAVASCRIPT ============================= -->
+<script>
+// ─── Normalize Vietnamese name for comparison ───────────────────────────────
+function normalizeName(str) {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// ─── Student → Exam mapping ──────────────────────────────────────────────────
+const STUDENTS = {
+  'tran pham gia long':   { de: 1, display: 'Trần Phạm Gia Long' },
+  'pham chi van':         { de: 1, display: 'Phạm Chí Văn' },
+  'nguyen le huu tri':    { de: 1, display: 'Nguyễn Lê Hữu Trí' },
+  'do dinh dai phong':    { de: 2, display: 'Đỗ Đình Đại Phong' },
+  'pham duc phat':        { de: 2, display: 'Phạm Đức Phát' },
+};
+
+// ─── localStorage keys ───────────────────────────────────────────────────────
+const LS_STUDENT   = 'cp1_student';
+const LS_START     = 'cp1_start_ts';
+const LS_SUBMITTED_PREFIX = 'cp1_submitted_snapshot_';
+const EXAM_DURATION = 120 * 60; // 7200 seconds
+const APPS_SCRIPT_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwysfGp1PRHPqsmy0piSGTuR3bPHWtzyGVYfqV5xtbqmVOeb2arc97RLJD3OMaxubCr/exec';
+
+// ─── Timer state ─────────────────────────────────────────────────────────────
+let timerInterval = null;
+
+// ─── Enter key support ───────────────────────────────────────────────────────
+document.getElementById('name-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleLogin();
+});
+
+// ─── Login handler ───────────────────────────────────────────────────────────
+function handleLogin() {
+  const raw = document.getElementById('name-input').value;
+  const key = normalizeName(raw);
+  const err = document.getElementById('login-error');
+  err.classList.remove('show');
+
+  if (!STUDENTS[key]) {
+    void document.getElementById('login-error').offsetWidth; // force reflow for re-animation
+    err.classList.add('show');
+    return;
+  }
+
+  const student = STUDENTS[key];
+
+  // Save to localStorage so F5 restores session
+  localStorage.setItem(LS_STUDENT, key);
+  // Only set start time if not already set (first login)
+  if (!localStorage.getItem(LS_START)) {
+    localStorage.setItem(LS_START, Date.now().toString());
+  }
+
+  showExam(student);
+}
+
+// ─── Show exam ───────────────────────────────────────────────────────────────
+function showExam(student) {
+  document.getElementById('login-screen').style.display = 'none';
+  const examEl = document.getElementById('exam-screen');
+  examEl.style.display = 'block';
+  examEl.classList.add('visible');
+
+  document.getElementById('timer-name-display').textContent = '— ' + student.display;
+  document.getElementById('expired-filename').textContent = makeFilename(student.display);
+
+  // Render exam content
+  const content = document.getElementById('exam-content');
+  content.innerHTML = buildExamHTML(student);
+
+  initQuestionPager(content);
+  initSubmittedReview(student);
+
+  // Start timer (persistent across F5)
+  startTimer();
+}
+
+function getSubmittedStorageKey(displayName) {
+  return LS_SUBMITTED_PREFIX + normalizeName(displayName).replace(/\s+/g, '_');
+}
+
+function formatFileSize(size) {
+  if (!Number.isFinite(size) || size < 0) return '-';
+  if (size < 1024) return size + ' B';
+  if (size < 1024 * 1024) return (size / 1024).toFixed(1) + ' KB';
+  return (size / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function formatDateTime(ts) {
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return '-';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  const ss = String(d.getSeconds()).padStart(2, '0');
+  return `${dd}/${mm}/${yyyy} ${hh}:${min}:${ss}`;
+}
+
+function loadSubmittedSnapshot(displayName) {
+  const raw = localStorage.getItem(getSubmittedStorageKey(displayName));
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    if (typeof parsed.fileName !== 'string' || typeof parsed.content !== 'string') return null;
+    return parsed;
+  } catch (e) {
+    return null;
+  }
+}
+
+function saveSubmittedSnapshot(displayName, snapshot) {
+  localStorage.setItem(getSubmittedStorageKey(displayName), JSON.stringify(snapshot));
+}
+
+function clearSubmittedSnapshot(displayName) {
+  localStorage.removeItem(getSubmittedStorageKey(displayName));
+}
+
+function isAppsScriptConfigured() {
+  return !!APPS_SCRIPT_WEBAPP_URL && !APPS_SCRIPT_WEBAPP_URL.includes('REPLACE_WITH_WEBAPP_DEPLOYMENT_ID');
+}
+
+function isValidFilenameForStudent(fileName, displayName) {
+  const expected = makeFilename(displayName).toLowerCase();
+  return (fileName || '').trim().toLowerCase() === expected;
+}
+
+function utf8ToBase64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  bytes.forEach(b => {
+    bin += String.fromCharCode(b);
+  });
+  return btoa(bin);
+}
+
+function setSubmittedStatus(message, isError = false) {
+  const status = document.getElementById('submitted-file-status');
+  if (!status) return;
+  status.textContent = message;
+  status.classList.toggle('error', isError);
+}
+
+function renderSubmittedSnapshot(displayName) {
+  const snapshot = loadSubmittedSnapshot(displayName);
+  const card = document.getElementById('submitted-file-card');
+  const nameEl = document.getElementById('submitted-file-name');
+  const sizeEl = document.getElementById('submitted-file-size');
+  const timeEl = document.getElementById('submitted-file-time');
+  const directEl = document.getElementById('submitted-direct-status');
+  const previewEl = document.getElementById('submitted-file-preview');
+  const toggleBtn = document.getElementById('toggle-submitted-preview-btn');
+
+  if (!card || !nameEl || !sizeEl || !timeEl || !directEl || !previewEl || !toggleBtn) return;
+
+  if (!snapshot) {
+    card.classList.add('is-hidden');
+    previewEl.classList.add('is-hidden');
+    previewEl.textContent = '';
+    toggleBtn.textContent = 'Hiện nội dung';
+    return;
+  }
+
+  nameEl.textContent = snapshot.fileName;
+  sizeEl.textContent = formatFileSize(snapshot.fileSize);
+  timeEl.textContent = formatDateTime(snapshot.savedAt);
+  directEl.textContent = snapshot.directSubmittedAt
+    ? `Đã gửi lúc ${formatDateTime(snapshot.directSubmittedAt)}`
+    : 'Chưa nộp';
+  previewEl.textContent = snapshot.content;
+  previewEl.classList.add('is-hidden');
+  toggleBtn.textContent = 'Hiện nội dung';
+  card.classList.remove('is-hidden');
+}
+
+function initSubmittedReview(student) {
+  const displayName = student.display;
+  const expectedFileName = makeFilename(displayName);
+  const fileInput = document.getElementById('submitted-file-input');
+  const saveBtn = document.getElementById('save-submitted-file-btn');
+  const toggleBtn = document.getElementById('toggle-submitted-preview-btn');
+  const downloadBtn = document.getElementById('download-submitted-file-btn');
+  const clearBtn = document.getElementById('clear-submitted-file-btn');
+  const directSubmitBtn = document.getElementById('direct-submit-file-btn');
+  const previewEl = document.getElementById('submitted-file-preview');
+
+  if (!fileInput || !saveBtn || !toggleBtn || !downloadBtn || !clearBtn || !directSubmitBtn || !previewEl) return;
+
+  renderSubmittedSnapshot(displayName);
+  directSubmitBtn.disabled = !isAppsScriptConfigured();
+
+  if (loadSubmittedSnapshot(displayName)) {
+    if (!isAppsScriptConfigured()) {
+      setSubmittedStatus('Đã khôi phục bản lưu file đã nộp. Cần cấu hình APPS_SCRIPT_WEBAPP_URL để nộp thẳng.', true);
+    } else {
+      setSubmittedStatus('Đã khôi phục bản lưu file đã nộp.');
+    }
+  } else {
+    setSubmittedStatus('Chưa có bản lưu. Hãy chọn file đã nộp rồi bấm Lưu file đã nộp.');
+  }
+
+  saveBtn.addEventListener('click', async () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) {
+      setSubmittedStatus('Vui lòng chọn file trước khi lưu.', true);
+      return;
+    }
+
+    if (!isValidFilenameForStudent(file.name, displayName)) {
+      setSubmittedStatus(`Tên file chưa đúng. Cần đúng: ${expectedFileName}`, true);
+      return;
+    }
+
+    try {
+      const content = await file.text();
+      const snapshot = {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type || 'text/plain',
+        savedAt: Date.now(),
+        content
+      };
+      saveSubmittedSnapshot(displayName, snapshot);
+      renderSubmittedSnapshot(displayName);
+      fileInput.value = '';
+      if (!isAppsScriptConfigured()) {
+        setSubmittedStatus('Đã lưu file. Hãy cấu hình APPS_SCRIPT_WEBAPP_URL để dùng nút Nộp thẳng hệ thống.', true);
+      } else {
+        setSubmittedStatus('Đã lưu file đã nộp. Bạn có thể bấm Nộp thẳng hệ thống.');
+      }
+    } catch (e) {
+      setSubmittedStatus('Không thể đọc file. Hãy thử lại.', true);
+    }
+  });
+
+  directSubmitBtn.addEventListener('click', async () => {
+    if (!isAppsScriptConfigured()) {
+      setSubmittedStatus('Bạn chưa cấu hình APPS_SCRIPT_WEBAPP_URL.', true);
+      return;
+    }
+
+    const snapshot = loadSubmittedSnapshot(displayName);
+    if (!snapshot) {
+      setSubmittedStatus('Chưa có bản lưu file để nộp thẳng.', true);
+      return;
+    }
+
+    if (!isValidFilenameForStudent(snapshot.fileName, displayName)) {
+      setSubmittedStatus(`Tên file không hợp lệ để nộp. Cần đúng: ${expectedFileName}`, true);
+      return;
+    }
+
+    const payload = {
+      studentName: displayName,
+      studentKey: normalizeName(displayName),
+      examSet: student.de,
+      expectedFileName: makeFilename(displayName),
+      fileName: snapshot.fileName,
+      fileType: snapshot.fileType || 'text/plain',
+      fileSize: snapshot.fileSize || 0,
+      fileContentBase64: utf8ToBase64(snapshot.content || ''),
+      source: 'cp1_html',
+      submittedAtClient: new Date().toISOString()
+    };
+
+    directSubmitBtn.disabled = true;
+    setSubmittedStatus('Đang gửi bài lên hệ thống...');
+
+    try {
+      const res = await fetch(APPS_SCRIPT_WEBAPP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+
+      let data = null;
+      try {
+        data = await res.json();
+      } catch (e) {
+        data = null;
+      }
+
+      if (!res.ok || (data && data.ok === false)) {
+        throw new Error((data && data.message) || 'Máy chủ không xác nhận nộp bài');
+      }
+
+      snapshot.directSubmittedAt = Date.now();
+      if (data && data.submissionId) snapshot.submissionId = data.submissionId;
+      saveSubmittedSnapshot(displayName, snapshot);
+      renderSubmittedSnapshot(displayName);
+      setSubmittedStatus('Nộp thẳng thành công. Bài đã được gửi lên hệ thống.');
+    } catch (err) {
+      setSubmittedStatus('Nộp thẳng thất bại. Kiểm tra URL Apps Script và quyền triển khai.', true);
+    } finally {
+      directSubmitBtn.disabled = !isAppsScriptConfigured();
+    }
+  });
+
+  toggleBtn.addEventListener('click', () => {
+    const snapshot = loadSubmittedSnapshot(displayName);
+    if (!snapshot) {
+      setSubmittedStatus('Chưa có bản lưu để xem nội dung.', true);
+      return;
+    }
+
+    const hidden = previewEl.classList.toggle('is-hidden');
+    toggleBtn.textContent = hidden ? 'Hiện nội dung' : 'Ẩn nội dung';
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const snapshot = loadSubmittedSnapshot(displayName);
+    if (!snapshot) {
+      setSubmittedStatus('Chưa có bản lưu để tải lại.', true);
+      return;
+    }
+
+    const blob = new Blob([snapshot.content], { type: snapshot.fileType || 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = snapshot.fileName || 'submitted_file.py';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setSubmittedStatus('Đã tải lại bản lưu.');
+  });
+
+  clearBtn.addEventListener('click', () => {
+    clearSubmittedSnapshot(displayName);
+    renderSubmittedSnapshot(displayName);
+    setSubmittedStatus('Đã xóa bản lưu file đã nộp.');
+  });
+}
+
+function initQuestionPager(container) {
+  const cards = Array.from(container.querySelectorAll('.problem-card'));
+  const prevBtn = container.querySelector('#prev-question-btn');
+  const nextBtn = container.querySelector('#next-question-btn');
+  const indicator = container.querySelector('#question-page-indicator');
+  const jumpList = container.querySelector('#question-jump-list');
+  const questionNav = container.querySelector('.question-nav');
+  if (!cards.length || !prevBtn || !nextBtn || !indicator || !jumpList || !questionNav) return;
+
+  let current = 0;
+
+  jumpList.innerHTML = cards.map((_, i) => (
+    `<button type="button" class="question-jump-btn" data-question-index="${i}">${i + 1}</button>`
+  )).join('');
+
+  const jumpButtons = Array.from(jumpList.querySelectorAll('.question-jump-btn'));
+
+  function setQuestion(index, shouldScroll = true) {
+    const bounded = Math.max(0, Math.min(cards.length - 1, index));
+    current = bounded;
+
+    cards.forEach((card, i) => card.classList.toggle('active', i === current));
+    jumpButtons.forEach((btn, i) => btn.classList.toggle('active', i === current));
+
+    indicator.textContent = `Câu ${current + 1} / ${cards.length}`;
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === cards.length - 1;
+
+    if (shouldScroll) {
+      const navTop = questionNav.getBoundingClientRect().top + window.scrollY;
+      const targetTop = Math.max(0, navTop - 72);
+      window.scrollTo({ top: targetTop, behavior: 'smooth' });
+    }
+  }
+
+  prevBtn.addEventListener('click', () => setQuestion(current - 1));
+  nextBtn.addEventListener('click', () => setQuestion(current + 1));
+  jumpButtons.forEach((btn, idx) => {
+    btn.addEventListener('click', () => setQuestion(idx));
+  });
+
+  setQuestion(0, false);
+}
+
+// ─── Expand/collapse problem cards ──────────────────────────────────────────
+function bindProblemToggle(container) {
+  const cards = container.querySelectorAll('.problem-card');
+  cards.forEach(card => {
+    const header = card.querySelector('.problem-header');
+    if (!header) return;
+
+    header.setAttribute('role', 'button');
+    header.setAttribute('tabindex', '0');
+    header.setAttribute('aria-expanded', 'false');
+
+    const toggle = () => {
+      const expanded = card.classList.toggle('expanded');
+      header.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    };
+
+    header.addEventListener('click', toggle);
+    header.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle();
+      }
+    });
+  });
+}
+
+// ─── Make submission filename ─────────────────────────────────────────────────
+function makeFilename(displayName) {
+  return normalizeName(displayName).replace(/\s+/g, '') + '_cp1.py';
+}
+
+// ─── Timer ───────────────────────────────────────────────────────────────────
+function startTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(tickTimer, 500);
+  tickTimer(); // immediate first tick
+}
+
+function tickTimer() {
+  const start  = parseInt(localStorage.getItem(LS_START) || Date.now());
+  const elapsed = Math.floor((Date.now() - start) / 1000);
+  const remaining = EXAM_DURATION - elapsed;
+
+  const display = document.getElementById('timer-display');
+
+  if (remaining <= 0) {
+    clearInterval(timerInterval);
+    display.textContent = '00:00:00';
+    display.className = 'timer-display danger';
+    document.getElementById('expired-overlay').classList.add('show');
+    return;
+  }
+
+  const h = Math.floor(remaining / 3600);
+  const m = Math.floor((remaining % 3600) / 60);
+  const s = remaining % 60;
+  display.textContent =
+    String(h).padStart(2,'0') + ':' +
+    String(m).padStart(2,'0') + ':' +
+    String(s).padStart(2,'0');
+
+  if (remaining < 300) {
+    display.className = 'timer-display danger';
+  } else if (remaining < 600) {
+    display.className = 'timer-display warn';
+  } else {
+    display.className = 'timer-display';
+  }
+}
+
+// ─── Auto-restore session on page load ───────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const savedKey = localStorage.getItem(LS_STUDENT);
+  if (savedKey && STUDENTS[savedKey]) {
+    document.getElementById('name-input').value = STUDENTS[savedKey].display;
+    showExam(STUDENTS[savedKey]);
+  }
+});
+
+// ─── Build today's date string ────────────────────────────────────────────────
+function todayString() {
+  const d = new Date();
+  return d.getDate().toString().padStart(2,'0') + '/' +
+    (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear();
+}
+
+// ─── Problem card builder helper ─────────────────────────────────────────────
+function card(num, title, desc, inputFmt, outputFmt, examples, constraint, note) {
+  const examplesHTML = examples.map((ex, i) => `
+    <div class="example-block">
+      <div class="example-label-bar">Ví dụ ${i+1}</div>
+      <div class="io-grid">
+        <div class="io-col">
+          <div class="io-col-label">Input</div>
+          <pre class="io-code">${ex.input}</pre>
+        </div>
+        <div class="io-col">
+          <div class="io-col-label">Output</div>
+          <pre class="io-code">${ex.output}</pre>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  const noteHTML = note ? `<div class="note-box">${note}</div>` : '';
+
+  return `
+  <div class="problem-card">
+    <div class="problem-header">
+      <span class="problem-num">Câu ${num}</span>
+      <span class="problem-title">${title}</span>
+    </div>
+    <div class="problem-body">
+      <div class="section-label">Mô tả</div>
+      <p class="desc-text">${desc}</p>
+
+      <div class="section-label">Input</div>
+      <div class="format-box">${inputFmt}</div>
+
+      <div class="section-label">Output</div>
+      <div class="format-box">${outputFmt}</div>
+
+      <div class="section-label">Ví dụ</div>
+      <div class="examples">${examplesHTML}</div>
+
+      <div class="section-label">Ràng buộc</div>
+      <div class="constraint-box">${constraint}</div>
+      ${noteHTML}
+    </div>
+  </div>`;
+}
+
+// ─── Build full exam HTML ─────────────────────────────────────────────────────
+function buildExamHTML(student) {
+  const date = todayString();
+  const fname = makeFilename(student.display);
+  const deLabel = 'Đề ' + student.de;
+
+  const problems = student.de === 1 ? buildDe1() : buildDe2();
+
+  return `
+  <div class="exam-header" style="animation-delay:0s">
+    <div class="exam-header-top">
+      <span class="exam-badge-de">${deLabel}</span>
+      <div>
+        <div class="exam-header-title">
+          <small>TDM-C4K-PTB12 — CP1</small>
+          Kiểm tra định kì lần 1
+        </div>
+      </div>
+    </div>
+    <div class="exam-meta-grid">
+      <div class="meta-item">
+        <div>
+          <span class="meta-label">Học viên</span>
+          ${student.display}
+        </div>
+      </div>
+      <div class="meta-item">
+        <div>
+          <span class="meta-label">Thời gian</span>
+          120 phút
+        </div>
+      </div>
+      <div class="meta-item">
+        <div>
+          <span class="meta-label">Ngày thi</span>
+          ${date}
+        </div>
+      </div>
+      <div class="meta-item">
+        <div>
+          <span class="meta-label">Số câu</span>
+          10 câu bài tập
+        </div>
+      </div>
+    </div>
+    <div class="submit-box">
+      <div class="submit-box-text">
+        <strong>Yêu cầu nộp bài:</strong> File Python đặt tên theo định dạng
+        <code>hovaten_cp1.py</code><br>
+        Ví dụ của bạn: <code>${fname}</code>
+      </div>
+      <div class="submit-actions">
+        Nộp trực tiếp bằng nút <strong>Nộp thẳng hệ thống</strong> sau khi lưu file đúng tên.
+      </div>
+      <div class="submitted-review">
+        <div class="submitted-review-title">Xem lại file đã nộp</div>
+        <div class="submitted-review-row">
+          <input id="submitted-file-input" class="submitted-file-input" type="file" accept=".py,.txt,text/x-python">
+          <button id="save-submitted-file-btn" class="submitted-save-btn" type="button">Lưu file đã nộp</button>
+        </div>
+        <div id="submitted-file-card" class="submitted-file-card is-hidden">
+          <div class="submitted-file-meta"><strong>Tên file:</strong> <span id="submitted-file-name"></span></div>
+          <div class="submitted-file-meta"><strong>Kích thước:</strong> <span id="submitted-file-size"></span></div>
+          <div class="submitted-file-meta"><strong>Thời điểm lưu:</strong> <span id="submitted-file-time"></span></div>
+          <div class="submitted-file-meta"><strong>Trạng thái nộp thẳng:</strong> <span id="submitted-direct-status"></span></div>
+          <div class="submitted-review-actions">
+            <button id="direct-submit-file-btn" class="submitted-action-btn primary" type="button">Nộp thẳng hệ thống</button>
+            <button id="toggle-submitted-preview-btn" class="submitted-action-btn" type="button">Hiện nội dung</button>
+            <button id="download-submitted-file-btn" class="submitted-action-btn" type="button">Tải lại file</button>
+            <button id="clear-submitted-file-btn" class="submitted-action-btn" type="button">Xóa bản lưu</button>
+          </div>
+          <pre id="submitted-file-preview" class="submitted-file-preview is-hidden"></pre>
+        </div>
+        <div id="submitted-file-status" class="submitted-status"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="question-nav">
+    <div class="question-nav-main">
+      <button id="prev-question-btn" class="question-nav-btn" type="button">Câu trước</button>
+      <div id="question-page-indicator" class="question-nav-indicator">Câu 1 / 10</div>
+      <button id="next-question-btn" class="question-nav-btn" type="button">Câu sau</button>
+    </div>
+    <div id="question-jump-list" class="question-jump-list"></div>
+  </div>
+
+  <div class="problems-list">
+    ${problems}
+  </div>`;
+}
+
+// ─── ĐỀ 1 ────────────────────────────────────────────────────────────────────
+function buildDe1() {
+  return [
+    card(1, 'Tổng hai số nguyên',
+      'Nhập vào hai số nguyên <b>a</b> và <b>b</b>. Tính và in ra tổng <b>a + b</b>.',
+      'Một dòng chứa hai số nguyên <b>a</b> và <b>b</b>, cách nhau bởi dấu cách.',
+      'In ra một số nguyên là kết quả của phép tính <b>a + b</b>.',
+      [
+        { input: '3 7',   output: '10',  explain: '3 + 7 = 10' },
+        { input: '-5 12', output: '7',   explain: '-5 + 12 = 7' },
+        { input: '0 0',   output: '0',   explain: '0 + 0 = 0' },
+      ],
+      '-10⁹ ≤ a, b ≤ 10⁹'
+    ),
+    card(2, 'Số lớn hơn trong hai số',
+      'Nhập vào hai số nguyên <b>a</b> và <b>b</b>. In ra số có giá trị lớn hơn trong hai số. Nếu hai số bằng nhau, in ra giá trị đó.',
+      'Một dòng chứa hai số nguyên <b>a</b> và <b>b</b>.',
+      'In ra một số nguyên là số lớn hơn (hoặc bằng nhau nếu a = b).',
+      [
+        { input: '4 9',   output: '9',   explain: '9 > 4, in ra 9' },
+        { input: '-3 -8', output: '-3',  explain: '-3 > -8, in ra -3' },
+        { input: '5 5',   output: '5',   explain: 'Hai số bằng nhau, in ra 5' },
+      ],
+      '-10⁹ ≤ a, b ≤ 10⁹'
+    ),
+    card(3, 'Liệt kê số chẵn từ 1 đến n',
+      'Nhập vào số nguyên dương <b>n</b>. In ra tất cả các số chẵn từ 1 đến <b>n</b>, mỗi số trên một dòng.',
+      'Một dòng chứa số nguyên dương <b>n</b>.',
+      'In ra các số chẵn trong đoạn [1, n], mỗi số trên một dòng.',
+      [
+        { input: '10', output: '2\n4\n6\n8\n10', explain: 'Các số chẵn từ 2 đến 10' },
+        { input: '7',  output: '2\n4\n6',        explain: '7 là lẻ nên chỉ đến 6' },
+        { input: '1',  output: '',               explain: 'Không có số chẵn nào trong [1,1]' },
+      ],
+      '1 ≤ n ≤ 10⁶'
+    ),
+    card(4, 'Tổng các số chẵn từ 1 đến n',
+      'Nhập vào số nguyên dương <b>n</b>. Tính và in ra tổng tất cả các số chẵn trong đoạn [1, n].',
+      'Một dòng chứa số nguyên dương <b>n</b>.',
+      'In ra một số nguyên là tổng các số chẵn trong đoạn [1, n].',
+      [
+        { input: '10', output: '30',  explain: '2 + 4 + 6 + 8 + 10 = 30' },
+        { input: '7',  output: '12',  explain: '2 + 4 + 6 = 12' },
+        { input: '2',  output: '2',   explain: 'Chỉ có số 2' },
+      ],
+      '1 ≤ n ≤ 10⁶'
+    ),
+    card(5, 'Tìm số lớn nhất và nhỏ nhất',
+      'Cho danh sách <b>n</b> số nguyên. Tìm và in ra số lớn nhất và số nhỏ nhất trong danh sách.',
+      'Dòng đầu chứa số nguyên dương <b>n</b>.<br>Dòng thứ hai chứa <b>n</b> số nguyên, cách nhau bởi dấu cách.',
+      'In ra hai số nguyên: số lớn nhất và số nhỏ nhất, cách nhau bởi dấu cách.',
+      [
+        { input: '5\n3 1 7 2 9',  output: '9 1',  explain: 'Max = 9, Min = 1' },
+        { input: '4\n-3 0 5 -1',  output: '5 -3', explain: 'Max = 5, Min = -3' },
+        { input: '1\n42',          output: '42 42',explain: 'Chỉ có 1 phần tử' },
+      ],
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ ≤ 10⁹'
+    ),
+    card(6, 'Số lớn thứ hai và nhỏ thứ hai',
+      'Cho danh sách <b>n</b> số nguyên <b>phân biệt</b> (n ≥ 2). Tìm và in ra số lớn thứ hai và số nhỏ thứ hai trong danh sách.',
+      'Dòng đầu chứa số nguyên dương <b>n</b> (n ≥ 2).<br>Dòng thứ hai chứa <b>n</b> số nguyên phân biệt.',
+      'In ra hai số nguyên: số lớn thứ 2 và số nhỏ thứ 2, cách nhau bởi dấu cách.',
+      [
+        { input: '5\n3 1 7 2 9',  output: '7 2',  explain: 'Sắp xếp: 1<2<3<7<9 → lớn thứ 2: 7, nhỏ thứ 2: 2' },
+        { input: '4\n10 4 8 1',   output: '8 4',  explain: 'Sắp xếp: 1<4<8<10 → lớn thứ 2: 8, nhỏ thứ 2: 4' },
+        { input: '2\n5 3',        output: '3 5',  explain: 'n=2: lớn thứ 2=3, nhỏ thứ 2=5' },
+      ],
+      '2 ≤ n ≤ 10⁵ &nbsp;|&nbsp; Các số nguyên phân biệt'
+    ),
+    card(7, 'Tổng chia hết cho 3 hoặc 5',
+      'Cho danh sách <b>n</b> số nguyên. Tính tổng các số nguyên trong danh sách chia hết cho 3 <b>hoặc</b> chia hết cho 5.',
+      'Dòng đầu chứa số nguyên dương <b>n</b>.<br>Dòng thứ hai chứa <b>n</b> số nguyên.',
+      'In ra một số nguyên là tổng của các phần tử thỏa điều kiện. Nếu không có phần tử nào thỏa, in ra 0.',
+      [
+        { input: '6\n1 3 5 7 9 15', output: '32', explain: '3 + 5 + 9 + 15 = 32 (3%3=0, 5%5=0, 9%3=0, 15%3=0)' },
+        { input: '4\n2 4 6 10',      output: '16', explain: '6 + 10 = 16 (6%3=0, 10%5=0)' },
+        { input: '3\n1 2 4',         output: '0',  explain: 'Không phần tử nào thỏa điều kiện' },
+      ],
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ ≤ 10⁹'
+    ),
+    card(8, 'Xóa phần tử có giá trị bằng k',
+      'Cho danh sách <b>n</b> số nguyên và một giá trị <b>k</b>. Xóa tất cả các phần tử có giá trị bằng <b>k</b> khỏi danh sách, sau đó in ra danh sách còn lại.',
+      'Dòng đầu chứa hai số nguyên <b>n</b> và <b>k</b>.<br>Dòng thứ hai chứa <b>n</b> số nguyên.',
+      'In ra các phần tử còn lại sau khi xóa, cách nhau bởi dấu cách. Nếu không còn phần tử nào, in ra dòng trống.',
+      [
+        { input: '6 3\n1 3 3 5 3 7', output: '1 5 7',   explain: 'Xóa tất cả số 3, còn lại 1, 5, 7' },
+        { input: '4 9\n1 2 3 4',      output: '1 2 3 4', explain: 'Không có phần tử nào bằng k=9' },
+        { input: '3 1\n1 1 1',        output: '',        explain: 'Xóa hết, in dòng trống' },
+      ],
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ, k ≤ 10⁹'
+    ),
+    card(9, 'Liệt kê số nguyên tố trong danh sách',
+      'Cho danh sách <b>n</b> số nguyên dương. In ra tất cả các số là số nguyên tố trong danh sách, theo đúng thứ tự xuất hiện.',
+      'Dòng đầu chứa số nguyên dương <b>n</b>.<br>Dòng thứ hai chứa <b>n</b> số nguyên dương.',
+      'In ra các số nguyên tố cách nhau bởi dấu cách, theo thứ tự xuất hiện ban đầu. Nếu không có số nguyên tố nào, in ra <code>-1</code>.',
+      [
+        { input: '7\n2 4 5 6 7 8 11', output: '2 5 7 11', explain: 'Các số nguyên tố trong danh sách: 2, 5, 7, 11' },
+        { input: '4\n4 6 8 9',        output: '-1',        explain: 'Không có số nguyên tố nào' },
+        { input: '3\n2 3 5',          output: '2 3 5',     explain: 'Tất cả đều là số nguyên tố' },
+      ],
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ ≤ 10⁶'
+    ),
+    card(10, 'Đếm và tổng các số nguyên tố',
+      'Cho danh sách <b>n</b> số nguyên dương. Đếm số lượng và tính tổng của tất cả các số nguyên tố trong danh sách.',
+      'Dòng đầu chứa số nguyên dương <b>n</b>.<br>Dòng thứ hai chứa <b>n</b> số nguyên dương.',
+      'In ra hai số nguyên: số lượng và tổng các số nguyên tố trong danh sách, cách nhau bởi dấu cách.',
+      [
+        { input: '7\n2 4 5 6 7 8 11', output: '4 25', explain: 'Số nguyên tố: {2, 5, 7, 11} → Đếm = 4, Tổng = 25' },
+        { input: '3\n4 6 9',           output: '0 0',  explain: 'Không có số nguyên tố nào → 0 số, tổng = 0' },
+        { input: '5\n2 3 5 7 11',      output: '5 28', explain: 'Tất cả là SNT → Đếm = 5, Tổng = 2+3+5+7+11 = 28' },
+      ],
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ ≤ 10⁶'
+    ),
+  ].join('\n');
+}
+
+// ─── ĐỀ 2 ────────────────────────────────────────────────────────────────────
+function buildDe2() {
+  return [
+    card(1, 'Tổng từ 1 đến n',
+      'Nhập vào số nguyên dương <b>n</b>. Tính và in ra tổng: 1 + 2 + 3 + ... + n.',
+      'Một dòng chứa số nguyên dương <b>n</b>.',
+      'In ra một số nguyên là tổng từ 1 đến n.',
+      [
+        { input: '5',   output: '15',  explain: '1+2+3+4+5 = 15' },
+        { input: '100', output: '5050',explain: 'Công thức: n*(n+1)/2 = 100*101/2 = 5050' },
+        { input: '1',   output: '1',   explain: 'Chỉ có 1 phần tử' },
+      ],
+      '1 ≤ n ≤ 10⁶'
+    ),
+    card(2, 'Tổng chia hết cho 3 hoặc 5',
+      'Cho danh sách <b>n</b> số nguyên. Tính tổng các số nguyên trong danh sách chia hết cho 3 <b>hoặc</b> chia hết cho 5.',
+      'Dòng đầu chứa số nguyên dương <b>n</b>.<br>Dòng thứ hai chứa <b>n</b> số nguyên.',
+      'In ra tổng các số thỏa điều kiện. Nếu không có, in ra 0.',
+      [
+        { input: '6\n1 3 5 7 9 15', output: '32', explain: '3 + 5 + 9 + 15 = 32' },
+        { input: '4\n2 4 6 10',      output: '16', explain: '6 + 10 = 16 (6%3=0, 10%5=0)' },
+        { input: '3\n1 2 4',         output: '0',  explain: 'Không phần tử nào thỏa' },
+      ],
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ ≤ 10⁹'
+    ),
+    card(3, 'Kiểm tra số hoàn hảo',
+      '<b>Số hoàn hảo</b> (perfect number) là số nguyên dương bằng tổng tất cả các ước số dương của nó ngoại trừ chính nó. Ví dụ: 6 = 1+2+3, 28 = 1+2+4+7+14. Cho số nguyên dương <b>n</b>, kiểm tra xem <b>n</b> có phải là số hoàn hảo không.',
+      'Một dòng chứa số nguyên dương <b>n</b>.',
+      'In ra <b>YES</b> nếu n là số hoàn hảo, ngược lại in ra <b>NO</b>.',
+      [
+        { input: '6',  output: 'YES', explain: 'Ước của 6: {1, 2, 3} → Tổng = 6 ✓' },
+        { input: '28', output: 'YES', explain: 'Ước của 28: {1,2,4,7,14} → Tổng = 28 ✓' },
+        { input: '12', output: 'NO',  explain: 'Ước của 12: {1,2,3,4,6} → Tổng = 16 ≠ 12' },
+      ],
+      '1 ≤ n ≤ 10⁸'
+    ),
+    card(4, 'Mảng tăng dần nghiêm ngặt',
+      'Cho mảng <b>n</b> số nguyên. Kiểm tra xem mảng có <b>tăng dần nghiêm ngặt</b> hay không, tức là <code>a[0] &lt; a[1] &lt; a[2] &lt; ... &lt; a[n-1]</code> (mỗi phần tử phải lớn hơn hẳn phần tử trước nó, không được bằng nhau).',
+      'Dòng đầu chứa số nguyên dương <b>n</b>.<br>Dòng thứ hai chứa <b>n</b> số nguyên.',
+      'In ra <b>YES</b> nếu mảng tăng dần nghiêm ngặt, ngược lại in ra <b>NO</b>.',
+      [
+        { input: '4\n1 3 5 9',  output: 'YES', explain: '1 < 3 < 5 < 9 ✓' },
+        { input: '4\n1 3 3 9',  output: 'NO',  explain: 'Có hai phần tử bằng nhau (3 = 3)' },
+        { input: '4\n5 3 1 -1', output: 'NO',  explain: 'Mảng giảm dần, không tăng' },
+      ],
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ ≤ 10⁹'
+    ),
+    card(5, 'Số lớn thứ hai và nhỏ thứ hai',
+      'Cho danh sách <b>n</b> số nguyên <b>phân biệt</b> (n ≥ 2). Tìm và in ra số lớn thứ hai và số nhỏ thứ hai trong danh sách.',
+      'Dòng đầu chứa số nguyên dương <b>n</b> (n ≥ 2).<br>Dòng thứ hai chứa <b>n</b> số nguyên phân biệt.',
+      'In ra hai số nguyên: số lớn thứ 2 và số nhỏ thứ 2, cách nhau bởi dấu cách.',
+      [
+        { input: '5\n3 1 7 2 9',  output: '7 2',  explain: 'Sắp xếp: 1<2<3<7<9 → lớn thứ 2: 7, nhỏ thứ 2: 2' },
+        { input: '4\n10 4 8 1',   output: '8 4',  explain: 'Sắp xếp: 1<4<8<10 → lớn thứ 2: 8, nhỏ thứ 2: 4' },
+        { input: '2\n5 3',        output: '3 5',  explain: 'n=2: lớn thứ 2=3, nhỏ thứ 2=5' },
+      ],
+      '2 ≤ n ≤ 10⁵ &nbsp;|&nbsp; Các số nguyên phân biệt'
+    ),
+    card(6, 'Xóa phần tử có giá trị bằng k',
+      'Cho danh sách <b>n</b> số nguyên và một giá trị <b>k</b>. Xóa tất cả các phần tử có giá trị bằng <b>k</b>, sau đó in ra danh sách còn lại.',
+      'Dòng đầu chứa hai số nguyên <b>n</b> và <b>k</b>.<br>Dòng thứ hai chứa <b>n</b> số nguyên.',
+      'In ra các phần tử còn lại, cách nhau bởi dấu cách. Nếu không còn phần tử nào, in ra dòng trống.',
+      [
+        { input: '6 3\n1 3 3 5 3 7', output: '1 5 7',   explain: 'Xóa tất cả số 3' },
+        { input: '4 9\n1 2 3 4',      output: '1 2 3 4', explain: 'Không có phần tử nào bằng k=9' },
+        { input: '3 1\n1 1 1',        output: '',        explain: 'Xóa hết, in dòng trống' },
+      ],
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ, k ≤ 10⁹'
+    ),
+    card(7, 'Tách danh sách chẵn và lẻ',
+      'Cho danh sách <b>n</b> số nguyên. Tách thành 2 danh sách: danh sách số <b>chẵn</b> và danh sách số <b>lẻ</b> (giữ nguyên thứ tự ban đầu). Tính tổng từng danh sách.',
+      'Dòng đầu chứa số nguyên dương <b>n</b>.<br>Dòng thứ hai chứa <b>n</b> số nguyên.',
+      'Dòng 1: Các số chẵn, cách nhau bởi dấu cách (in <code>[]</code> nếu không có số chẵn nào).<br>Dòng 2: Tổng danh sách chẵn.<br>Dòng 3: Các số lẻ, cách nhau bởi dấu cách (in <code>[]</code> nếu không có số lẻ nào).<br>Dòng 4: Tổng danh sách lẻ.',
+      [
+        { input: '6\n1 2 3 4 5 6', output: '2 4 6\n12\n1 3 5\n9', explain: 'Chẵn: 2,4,6 (tổng=12) | Lẻ: 1,3,5 (tổng=9)' },
+        { input: '3\n1 3 5',       output: '[]\n0\n1 3 5\n9',      explain: 'Không có số chẵn nào → in []' },
+        { input: '3\n2 4 6',       output: '2 4 6\n12\n[]\n0',     explain: 'Không có số lẻ nào → in []' },
+      ],
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ ≤ 10⁹'
+    ),
+    card(8, 'Đếm và tổng các số nguyên tố',
+      'Cho danh sách <b>n</b> số nguyên dương. Đếm số lượng và tính tổng của tất cả các số nguyên tố trong danh sách.',
+      'Dòng đầu chứa số nguyên dương <b>n</b>.<br>Dòng thứ hai chứa <b>n</b> số nguyên dương.',
+      'In ra hai số nguyên: số lượng và tổng các số nguyên tố trong danh sách, cách nhau bởi dấu cách.',
+      [
+        { input: '7\n2 4 5 6 7 8 11', output: '4 25', explain: 'SNT: {2,5,7,11} → Đếm=4, Tổng=25' },
+        { input: '3\n4 6 9',           output: '0 0',  explain: 'Không có SNT nào → 0 số, tổng=0' },
+        { input: '5\n2 3 5 7 11',      output: '5 28', explain: 'Tất cả là SNT → Tổng=2+3+5+7+11=28' },
+      ],
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ ≤ 10⁶'
+    ),
+    card(9, 'Số nguyên tố lớn nhất và nhỏ nhất',
+      'Cho danh sách <b>n</b> số nguyên dương. Tìm số nguyên tố lớn nhất và số nguyên tố nhỏ nhất trong danh sách. Nếu danh sách không chứa số nguyên tố nào, in ra <code>-1</code>.',
+      'Dòng đầu chứa số nguyên dương <b>n</b>.<br>Dòng thứ hai chứa <b>n</b> số nguyên dương.',
+      'In ra hai số: số nguyên tố lớn nhất và nhỏ nhất, cách nhau bởi dấu cách. Nếu không có số nguyên tố, in ra <code>-1</code>.',
+      [
+        { input: '6\n4 2 9 11 7 8', output: '11 2', explain: 'SNT trong DS: {2,7,11} → Max=11, Min=2' },
+        { input: '3\n4 6 9',        output: '-1',   explain: 'Không có SNT nào' },
+        { input: '4\n5 5 5 5',      output: '5 5',  explain: 'Chỉ có số 5 (là SNT): Max=Min=5' },
+      ],
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ ≤ 10⁶'
+    ),
+    card(10, 'Số nguyên tố gần nhất với m',
+      'Cho danh sách <b>n</b> số nguyên dương và một giá trị <b>m</b>. Tìm số nguyên tố trong danh sách <b>gần với m nhất</b> (tức là có |aᵢ - m| nhỏ nhất). Nếu có nhiều số nguyên tố cùng khoảng cách đến m, chọn số có giá trị <b>nhỏ nhất</b>. Nếu không có số nguyên tố nào, in ra <code>-1</code>.',
+      'Dòng đầu chứa hai số nguyên dương <b>n</b> và <b>m</b>.<br>Dòng thứ hai chứa <b>n</b> số nguyên dương.',
+      'In ra một số nguyên là số nguyên tố gần m nhất. Nếu không có, in <code>-1</code>.',
+      [
+        { input: '5 6\n2 5 7 11 13', output: '5',  explain: '|5-6|=1, |7-6|=1. Cùng khoảng cách → chọn số nhỏ hơn: 5' },
+        { input: '4 10\n2 3 11 13',  output: '11', explain: '|11-10|=1, gần nhất' },
+        { input: '3 5\n4 6 9',       output: '-1', explain: 'Không có số nguyên tố nào trong danh sách' },
+      ],
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ, m ≤ 10⁶',
+      'Nếu nhiều số nguyên tố có cùng khoảng cách đến m, luôn chọn số có <strong>giá trị nhỏ nhất</strong>.'
+    ),
+  ].join('\n');
+}
+</script>
+</body>
+</html>
