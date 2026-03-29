@@ -918,10 +918,15 @@ const LS_STUDENT   = 'cp1_student';
 const LS_START     = 'cp1_start_ts';
 const LS_SUBMITTED_PREFIX = 'cp1_submitted_snapshot_';
 const EXAM_DURATION = 120 * 60; // 7200 seconds
+const LAST_MINUTES_REMINDER_WINDOW = 10 * 60; // 10 minutes
 const APPS_SCRIPT_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwysfGp1PRHPqsmy0piSGTuR3bPHWtzyGVYfqV5xtbqmVOeb2arc97RLJD3OMaxubCr/exec';
 
 // ─── Timer state ─────────────────────────────────────────────────────────────
 let timerInterval = null;
+let lastReminderMinute = null;
+let submissionLockedByTime = false;
+let devToolsMonitor = null;
+let devToolsLikelyOpen = false;
 
 // ─── Enter key support ───────────────────────────────────────────────────────
 document.getElementById('name-input').addEventListener('keydown', e => {
@@ -959,6 +964,8 @@ function showExam(student) {
   const examEl = document.getElementById('exam-screen');
   examEl.style.display = 'block';
   examEl.classList.add('visible');
+  submissionLockedByTime = false;
+  lastReminderMinute = null;
 
   document.getElementById('timer-name-display').textContent = '— ' + student.display;
   document.getElementById('expired-filename').textContent = makeFilename(student.display);
@@ -1043,6 +1050,78 @@ function setSubmittedStatus(message, isError = false) {
   status.classList.toggle('error', isError);
 }
 
+function getRemainingSeconds() {
+  const start = parseInt(localStorage.getItem(LS_START) || Date.now(), 10);
+  const elapsed = Math.floor((Date.now() - start) / 1000);
+  return EXAM_DURATION - elapsed;
+}
+
+function lockSubmissionByTime() {
+  submissionLockedByTime = true;
+  const directSubmitBtn = document.getElementById('direct-submit-file-btn');
+  if (directSubmitBtn) {
+    directSubmitBtn.disabled = true;
+    directSubmitBtn.title = 'Đã hết thời gian làm bài';
+  }
+  setSubmittedStatus('Đã hết thời gian. Hệ thống đã khóa nộp bài.', true);
+}
+
+function applyDevToolsPenalty() {
+  const currentStart = parseInt(localStorage.getItem(LS_START) || Date.now(), 10);
+  const penalizedStart = currentStart - 60 * 1000;
+  localStorage.setItem(LS_START, String(penalizedStart));
+  setSubmittedStatus('Phát hiện F12/Developer Tools: đã trừ 1 phút thời gian làm bài.', true);
+  alert('Không được mở Developer Tools. Hệ thống đã trừ 1 phút thời gian.');
+  tickTimer();
+}
+
+function handleForbiddenShortcut(e) {
+  const key = String(e.key || '').toLowerCase();
+  const isF12 = e.key === 'F12';
+  const isCtrlShiftOpen = (e.ctrlKey || e.metaKey) && e.shiftKey && (key === 'i' || key === 'j' || key === 'c');
+  const isViewSource = (e.ctrlKey || e.metaKey) && key === 'u';
+
+  if (isF12 || isCtrlShiftOpen || isViewSource) {
+    e.preventDefault();
+    e.stopPropagation();
+    applyDevToolsPenalty();
+  }
+}
+
+function monitorDevToolsState() {
+  const widthGap = window.outerWidth - window.innerWidth;
+  const heightGap = window.outerHeight - window.innerHeight;
+  const opened = widthGap > 200 || heightGap > 200;
+
+  if (opened && !devToolsLikelyOpen) {
+    devToolsLikelyOpen = true;
+    applyDevToolsPenalty();
+  } else if (!opened && devToolsLikelyOpen) {
+    devToolsLikelyOpen = false;
+  }
+}
+
+function initExamSecurity() {
+  document.addEventListener('keydown', handleForbiddenShortcut, true);
+  if (devToolsMonitor) clearInterval(devToolsMonitor);
+  devToolsMonitor = setInterval(monitorDevToolsState, 1000);
+}
+
+function remindLastTenMinutes(remaining) {
+  if (remaining > LAST_MINUTES_REMINDER_WINDOW || remaining <= 0) return;
+
+  const minuteMark = Math.floor(remaining / 60);
+  if (minuteMark === lastReminderMinute) return;
+  lastReminderMinute = minuteMark;
+
+  const message = minuteMark > 0
+    ? `Còn ${minuteMark} phút. Vui lòng kiểm tra thời gian và chuẩn bị nộp bài.`
+    : 'Còn dưới 1 phút. Vui lòng nộp bài ngay.';
+
+  setSubmittedStatus(message, true);
+  alert(message);
+}
+
 function renderSubmittedSnapshot(displayName) {
   const snapshot = loadSubmittedSnapshot(displayName);
   const card = document.getElementById('submitted-file-card');
@@ -1089,7 +1168,10 @@ function initSubmittedReview(student) {
   if (!fileInput || !saveBtn || !toggleBtn || !downloadBtn || !clearBtn || !directSubmitBtn || !previewEl) return;
 
   renderSubmittedSnapshot(displayName);
-  directSubmitBtn.disabled = !isAppsScriptConfigured();
+  directSubmitBtn.disabled = submissionLockedByTime || !isAppsScriptConfigured();
+  if (getRemainingSeconds() <= 0) {
+    lockSubmissionByTime();
+  }
 
   if (loadSubmittedSnapshot(displayName)) {
     if (!isAppsScriptConfigured()) {
@@ -1136,6 +1218,11 @@ function initSubmittedReview(student) {
   });
 
   directSubmitBtn.addEventListener('click', async () => {
+    if (submissionLockedByTime || getRemainingSeconds() <= 0) {
+      lockSubmissionByTime();
+      return;
+    }
+
     if (!isAppsScriptConfigured()) {
       setSubmittedStatus('Bạn chưa cấu hình APPS_SCRIPT_WEBAPP_URL.', true);
       return;
@@ -1194,7 +1281,7 @@ function initSubmittedReview(student) {
     } catch (err) {
       setSubmittedStatus('Nộp thẳng thất bại. Kiểm tra URL Apps Script và quyền triển khai.', true);
     } finally {
-      directSubmitBtn.disabled = !isAppsScriptConfigured();
+      directSubmitBtn.disabled = submissionLockedByTime || !isAppsScriptConfigured();
     }
   });
 
@@ -1318,16 +1405,16 @@ function startTimer() {
 }
 
 function tickTimer() {
-  const start  = parseInt(localStorage.getItem(LS_START) || Date.now());
-  const elapsed = Math.floor((Date.now() - start) / 1000);
-  const remaining = EXAM_DURATION - elapsed;
+  const remaining = getRemainingSeconds();
 
   const display = document.getElementById('timer-display');
+  remindLastTenMinutes(remaining);
 
   if (remaining <= 0) {
     clearInterval(timerInterval);
     display.textContent = '00:00:00';
     display.className = 'timer-display danger';
+    lockSubmissionByTime();
     document.getElementById('expired-overlay').classList.add('show');
     return;
   }
@@ -1351,6 +1438,7 @@ function tickTimer() {
 
 // ─── Auto-restore session on page load ───────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
+  initExamSecurity();
   const savedKey = localStorage.getItem(LS_STUDENT);
   if (savedKey && STUDENTS[savedKey]) {
     document.getElementById('name-input').value = STUDENTS[savedKey].display;
@@ -1581,7 +1669,8 @@ function buildDe1() {
         { input: '4\n2 4 6 10',      output: '16', explain: '6 + 10 = 16 (6%3=0, 10%5=0)' },
         { input: '3\n1 2 4',         output: '0',  explain: 'Không phần tử nào thỏa điều kiện' },
       ],
-      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ ≤ 10⁹'
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ ≤ 10⁹',
+      'Nếu một số chia hết cho cả 3 và 5 (ví dụ 15), chỉ cộng số đó <strong>một lần</strong>.'
     ),
     card(8, 'Xóa phần tử có giá trị bằng k',
       'Cho danh sách <b>n</b> số nguyên và một giá trị <b>k</b>. Xóa tất cả các phần tử có giá trị bằng <b>k</b> khỏi danh sách, sau đó in ra danh sách còn lại.',
@@ -1592,7 +1681,8 @@ function buildDe1() {
         { input: '4 9\n1 2 3 4',      output: '1 2 3 4', explain: 'Không có phần tử nào bằng k=9' },
         { input: '3 1\n1 1 1',        output: '',        explain: 'Xóa hết, in dòng trống' },
       ],
-      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ, k ≤ 10⁹'
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ, k ≤ 10⁹',
+      'Các phần tử còn lại phải <strong>giữ nguyên thứ tự xuất hiện ban đầu</strong>.'
     ),
     card(9, 'Liệt kê số nguyên tố trong danh sách',
       'Cho danh sách <b>n</b> số nguyên dương. In ra tất cả các số là số nguyên tố trong danh sách, theo đúng thứ tự xuất hiện.',
@@ -1603,7 +1693,8 @@ function buildDe1() {
         { input: '4\n4 6 8 9',        output: '-1',        explain: 'Không có số nguyên tố nào' },
         { input: '3\n2 3 5',          output: '2 3 5',     explain: 'Tất cả đều là số nguyên tố' },
       ],
-      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ ≤ 10⁶'
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ ≤ 10⁶',
+      'Quy ước: số nguyên tố là số tự nhiên <strong>lớn hơn 1</strong> và chỉ có đúng 2 ước dương là 1 và chính nó.'
     ),
     card(10, 'Đếm và tổng các số nguyên tố',
       'Cho danh sách <b>n</b> số nguyên dương. Đếm số lượng và tính tổng của tất cả các số nguyên tố trong danh sách.',
@@ -1614,7 +1705,8 @@ function buildDe1() {
         { input: '3\n4 6 9',           output: '0 0',  explain: 'Không có số nguyên tố nào → 0 số, tổng = 0' },
         { input: '5\n2 3 5 7 11',      output: '5 28', explain: 'Tất cả là SNT → Đếm = 5, Tổng = 2+3+5+7+11 = 28' },
       ],
-      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ ≤ 10⁶'
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ ≤ 10⁶',
+      'Đếm theo <strong>số lần xuất hiện</strong> trong danh sách (không gộp các giá trị trùng nhau).'
     ),
   ].join('\n');
 }
@@ -1642,7 +1734,8 @@ function buildDe2() {
         { input: '4\n2 4 6 10',      output: '16', explain: '6 + 10 = 16 (6%3=0, 10%5=0)' },
         { input: '3\n1 2 4',         output: '0',  explain: 'Không phần tử nào thỏa' },
       ],
-      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ ≤ 10⁹'
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ ≤ 10⁹',
+      'Nếu một số chia hết cho cả 3 và 5 thì chỉ cộng đúng <strong>một lần</strong>.'
     ),
     card(3, 'Kiểm tra số hoàn hảo',
       '<b>Số hoàn hảo</b> (perfect number) là số nguyên dương bằng tổng tất cả các ước số dương của nó ngoại trừ chính nó. Ví dụ: 6 = 1+2+3, 28 = 1+2+4+7+14. Cho số nguyên dương <b>n</b>, kiểm tra xem <b>n</b> có phải là số hoàn hảo không.',
@@ -1686,7 +1779,8 @@ function buildDe2() {
         { input: '4 9\n1 2 3 4',      output: '1 2 3 4', explain: 'Không có phần tử nào bằng k=9' },
         { input: '3 1\n1 1 1',        output: '',        explain: 'Xóa hết, in dòng trống' },
       ],
-      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ, k ≤ 10⁹'
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; -10⁹ ≤ aᵢ, k ≤ 10⁹',
+      'Giữ nguyên thứ tự các phần tử còn lại so với danh sách ban đầu.'
     ),
     card(7, 'Tách danh sách chẵn và lẻ',
       'Cho danh sách <b>n</b> số nguyên. Tách thành 2 danh sách: danh sách số <b>chẵn</b> và danh sách số <b>lẻ</b> (giữ nguyên thứ tự ban đầu). Tính tổng từng danh sách.',
@@ -1708,7 +1802,8 @@ function buildDe2() {
         { input: '3\n4 6 9',           output: '0 0',  explain: 'Không có SNT nào → 0 số, tổng=0' },
         { input: '5\n2 3 5 7 11',      output: '5 28', explain: 'Tất cả là SNT → Tổng=2+3+5+7+11=28' },
       ],
-      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ ≤ 10⁶'
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ ≤ 10⁶',
+      'Đếm theo số phần tử nguyên tố xuất hiện trong mảng (giá trị trùng vẫn được tính nhiều lần).'
     ),
     card(9, 'Số nguyên tố lớn nhất và nhỏ nhất',
       'Cho danh sách <b>n</b> số nguyên dương. Tìm số nguyên tố lớn nhất và số nguyên tố nhỏ nhất trong danh sách. Nếu danh sách không chứa số nguyên tố nào, in ra <code>-1</code>.',
@@ -1719,7 +1814,8 @@ function buildDe2() {
         { input: '3\n4 6 9',        output: '-1',   explain: 'Không có SNT nào' },
         { input: '4\n5 5 5 5',      output: '5 5',  explain: 'Chỉ có số 5 (là SNT): Max=Min=5' },
       ],
-      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ ≤ 10⁶'
+      '1 ≤ n ≤ 10⁵ &nbsp;|&nbsp; 1 ≤ aᵢ ≤ 10⁶',
+      'Nếu chỉ có một giá trị nguyên tố duy nhất thì in cùng giá trị đó cho cả lớn nhất và nhỏ nhất (ví dụ: 5 5).'
     ),
     card(10, 'Số nguyên tố gần nhất với m',
       'Cho danh sách <b>n</b> số nguyên dương và một giá trị <b>m</b>. Tìm số nguyên tố trong danh sách <b>gần với m nhất</b> (tức là có |aᵢ - m| nhỏ nhất). Nếu có nhiều số nguyên tố cùng khoảng cách đến m, chọn số có giá trị <b>nhỏ nhất</b>. Nếu không có số nguyên tố nào, in ra <code>-1</code>.',
